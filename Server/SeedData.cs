@@ -15,8 +15,9 @@ namespace Server
         {
             var services = new ServiceCollection();
             services.AddLogging();
-
-            services.AddDbContext<AspNetIdentityDbContext>(options => options.UseSqlServer(connectionString));
+            services.AddDbContext<AspNetIdentityDbContext>(
+                options => options.UseSqlServer(connectionString)
+            );
 
             services
                 .AddIdentity<IdentityUser, IdentityRole>()
@@ -24,37 +25,39 @@ namespace Server
                 .AddDefaultTokenProviders();
 
             services.AddOperationalDbContext(
-                    options =>
-                    {
-                        options.ConfigureDbContext = db => db.UseSqlServer(connectionString, sql => sql.MigrationsAssembly(typeof(SeedData).Assembly.FullName));
-                    }
-                );
-
+                options =>
+                {
+                    options.ConfigureDbContext = db =>
+                        db.UseSqlServer(
+                            connectionString,
+                            sql => sql.MigrationsAssembly(typeof(SeedData).Assembly.FullName)
+                        );
+                }
+            );
             services.AddConfigurationDbContext(
                 options =>
                 {
-                    options.ConfigureDbContext = db => db.UseSqlServer(connectionString, sql => sql.MigrationsAssembly(typeof(SeedData).Assembly.FullName));
+                    options.ConfigureDbContext = db =>
+                        db.UseSqlServer(
+                            connectionString,
+                            sql => sql.MigrationsAssembly(typeof(SeedData).Assembly.FullName)
+                        );
                 }
-                );
+            );
 
             var serviceProvider = services.BuildServiceProvider();
 
             using var scope = serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateScope();
-
             scope.ServiceProvider.GetService<PersistedGrantDbContext>().Database.Migrate();
 
             var context = scope.ServiceProvider.GetService<ConfigurationDbContext>();
-
             context.Database.Migrate();
 
             EnsureSeedData(context);
 
             var ctx = scope.ServiceProvider.GetService<AspNetIdentityDbContext>();
-
             ctx.Database.Migrate();
-
             EnsureUsers(scope);
-
         }
 
         private static void EnsureUsers(IServiceScope scope)
@@ -62,7 +65,7 @@ namespace Server
             var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
 
             var angella = userMgr.FindByNameAsync("angella").Result;
-            if(angella == null)
+            if (angella == null)
             {
                 angella = new IdentityUser
                 {
@@ -70,24 +73,24 @@ namespace Server
                     Email = "angella.freeman@email.com",
                     EmailConfirmed = true
                 };
-
                 var result = userMgr.CreateAsync(angella, "Pass123$").Result;
-                if(!result.Succeeded)
+                if (!result.Succeeded)
                 {
                     throw new Exception(result.Errors.First().Description);
                 }
 
-                result = userMgr.AddClaimsAsync(angella,
+                result =
+                    userMgr.AddClaimsAsync(
+                        angella,
                         new Claim[]
                         {
-                            new Claim(JwtClaimTypes.Name, "ajgella freman"),
-                            new Claim(JwtClaimTypes.GivenName, "ajgella"),
+                            new Claim(JwtClaimTypes.Name, "Angella Freeman"),
+                            new Claim(JwtClaimTypes.GivenName, "Angella"),
                             new Claim(JwtClaimTypes.FamilyName, "Freeman"),
                             new Claim(JwtClaimTypes.WebSite, "http://angellafreeman.com"),
-                            new Claim("Location", "somewhere"),
+                            new Claim("location", "somewhere")
                         }
                     ).Result;
-
                 if (!result.Succeeded)
                 {
                     throw new Exception(result.Errors.First().Description);
@@ -107,27 +110,33 @@ namespace Server
                 context.SaveChanges();
             }
 
-            if (!context.IdentityResources.Any()) {
-                foreach (var resource in Config.ApiResources)
+            if (!context.IdentityResources.Any())
+            {
+                foreach (var resource in Config.IdentityResources.ToList())
                 {
-                    context.ApiResources.Add(resource.ToEntity());
+                    context.IdentityResources.Add(resource.ToEntity());
                 }
+
                 context.SaveChanges();
             }
 
-            if (context.ApiScopes.Any()) {
-                foreach (var scope in Config.ApiScopes)
+            if (!context.ApiScopes.Any())
+            {
+                foreach (var resource in Config.ApiScopes.ToList())
                 {
-                    context.ApiScopes.Add(scope.ToEntity());
+                    context.ApiScopes.Add(resource.ToEntity());
                 }
+
                 context.SaveChanges();
             }
 
-            if (context.ApiResources.Any()) {
-                foreach (var resource in Config.ApiResources)
+            if (!context.ApiResources.Any())
+            {
+                foreach (var resource in Config.ApiResources.ToList())
                 {
                     context.ApiResources.Add(resource.ToEntity());
                 }
+
                 context.SaveChanges();
             }
         }
