@@ -18,12 +18,12 @@ namespace Server
 
         public static IEnumerable<ApiScope> ApiScopes =>
             new[] {
-                new ApiScope("CoffeAPI.read"), new ApiScope("CoffeeAPI.write")
+                new ApiScope("CoffeeAPI.read"), new ApiScope("CoffeeAPI.write")
             };
 
         public static IEnumerable<ApiResource> ApiResources =>
             new[] {
-                new ApiResource("CoffeAPI")
+                new ApiResource("CoffeeAPI")
                 {
                     Scopes = new List<string> {"CoffeeAPI.read", "CoffeeAPI.write" },
                     ApiSecrets = new List<Secret> { new Secret("ScopeSecret".Sha256()) },
